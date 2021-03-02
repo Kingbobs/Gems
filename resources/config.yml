@@ -1,0 +1,32 @@
+---
+# Gem settings
+# YourGemName:
+#   name: "§aYourGemColoredName"
+#   tags:
+#     - "consume to get nothing :P"
+#   item: "388:0"
+#   cooldown: 20
+#   effects:
+#     - "id:amplifier:duration"
+
+RegenerationGem:
+  name: "§r§dRegeneration Gem§7 [§e120s§7]"
+  tags:
+    - "§7Regeneration 3, 10 seconds"
+    - "§7HealthBoost 2, 30 seconds"
+  item: "315:1"
+  cooldown: 120
+  effects:
+    - "10:2:10"
+    - "21:2:30"
+InpoweringGem:
+  name: "§r§4Impowering Gem§7 [§e120s§7]"
+  tags:
+    - "§7Strength 3, 10 seconds"
+    - "§7Speed 3, 30 seconds"
+  item: "315:1"
+  cooldown: 120
+  effects:
+    - "5:2:10"
+    - "1:2:30"
+...
