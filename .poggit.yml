@@ -1,0 +1,8 @@
+--- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/Kingbobs/Gems
+build-by-default: true
+branches:
+- main
+projects:
+  Gems:
+    path: ""
+...
