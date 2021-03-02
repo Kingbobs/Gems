@@ -63,7 +63,7 @@ class Gem{
 	    foreach($this->effects as $ed){
 	      $data = explode(":", $ed);
          $ef = new EffectInstance (Effect::getEffect($data[0]));
-         $ef->setAmplifier($data[1])->setDuration(20 * $data[2]);
+         $ef->setAmplifier($data[1])->setDuration(20, $data[2]);
 	      $es[] = $ef; 
 	    }
 	return $es;
