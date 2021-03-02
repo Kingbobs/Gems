@@ -12,7 +12,7 @@ class Gem{
 	
 	private $shortName = "PrivateGem";
 	
-	private $name = "ArcticGEMS";
+	private $name = "Gems";
 	
 	private $item;
 	 
