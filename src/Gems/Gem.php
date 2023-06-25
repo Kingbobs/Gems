@@ -2,13 +2,17 @@
 
 namespace Gems;
 
-use pocketmine\Player;
-use pocketmine\item\Item;
 use pocketmine\entity\Effect;
 use pocketmine\entity\EffectInstance;
+use pocketmine\event\player\PlayerInteractEvent
+use pocketmine\item\Item;
+use pocketmine\Player;
+
 
 class Gem
 {
+    public function onLoad(): void
+    {
     private string $shortName = "PrivateGem";
     private string $name = "Gems";
     private Item $item;
@@ -57,16 +61,15 @@ class Gem
         $effectInstances = [];
         foreach ($this->effects as $effectData) {
             $data = explode(":", $effectData);
-            $effect = new EffectInstance(Effect::getEffect($data[0]));
-            $effect->setAmplifier($data[1])->setDuration(20 * $data[2]);
+            //$effect = new EffectInstance(Effect::getEffect($data[0]));
+            $effect = new EffectInstance(Effect::getEffect((int)$data[0]));
+            $effect->setAmplifier((int)$data[1])->setDuration(20 * (int)$data[2]);
+            //$effect->setAmplifier($data[1])->setDuration(20 * $data[2]);
             $effectInstances[] = $effect;
         }
-        return $effectInstances;
-    }
 
     public function checkCooldown(Player $player)
-    {
-        if (!isset($this->playerList[$player->getName()])) {
+    {is->playerList[$player->getName()] = time();
             $this->playerList[$player->getName()] = time();
             return true;
         }
@@ -90,10 +93,14 @@ class Gem
         if (!$this->isGem($item)) {
             return false;
         }
-        if (($time = $this->checkCooldown($player)) !== true) {
+        if (($time = $this->checkCooldown($player)) > 0) {
             $player->sendTip("§3Cooldown required, wait §b" . $time . "§7 seconds");
             return false;
         }
+       // if (($time = $this->checkCooldown($player)) !== true) {
+      //      $player->sendTip("§3Cooldown required, wait §b" . $time . "§7 seconds");
+      //      return false;
+       // }
         $player->sendTip("§2Activated effects..");
         foreach ($this->getEffects() as $effect) {
             $player->addEffect($effect);
