@@ -2,33 +2,51 @@
 
 namespace Gems;
 
-use pocketmine\entity\Effect;
-use pocketmine\entity\EffectInstance;
-use pocketmine\event\player\PlayerInteractEvent
+use pocketmine\entity\effect\Effect;
+use pocketmine\entity\effect\EffectInstance;
+use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\item\Item;
 use pocketmine\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\plugin\PluginDescription;
+use pocketmine\Server;
+use pocketmine\plugin\PluginLoader;
+use pocketmine\plugin\ResourceProvider;
 
-
-class Gem
+class Gem extends PluginBase implements Listener
 {
+    private string $shortName;
+    private string $name;
+    private string $item;
+    private int $cooldown;
+    private array $effects;
+    private array $tags;
+
     public function onLoad(): void
     {
-    private string $shortName = "PrivateGem";
-    private string $name = "Gems";
-    private Item $item;
-    private array $tags = [];
-    private int $cooldown = 0;
-    private array $effects = [];
-    private array $playerList = [];
+        $this->saveResource("config.yml");
+    }
 
-    public function __construct(string $shortName, string $name, string $item, int $cooldown, array $effects, array $tags = [])
+    public function onEnable(): void
     {
-        $this->shortName = $shortName;
-        $this->name = $name;
-        $this->item = $this->parseItemString($item);
-        $this->tags = $tags;
-        $this->cooldown = $cooldown;
-        $this->effects = $effects;
+        $this->getServer()->getPluginManager()->registerEvents($this, $this);
+    }
+
+    public function onDisable(): void
+    {
+        // Plugin shutdown logic
+    }
+
+    public function __construct(
+        PluginLoader $loader,
+        Server $server,
+        PluginDescription $description,
+        string $dataFolder,
+        string $file,
+        ResourceProvider $resourceProvider
+    ) {
+        parent::__construct($loader, $server, $description, $dataFolder, $file, $resourceProvider);
     }
 
     public function getShortName(): string
@@ -36,11 +54,10 @@ class Gem
         return $this->shortName;
     }
 
-    public function getName(): string
+    public function getGemName(): string
     {
         return $this->name;
     }
-
     public function getItem(): Item
     {
         return $this->item;
@@ -61,71 +78,64 @@ class Gem
         $effectInstances = [];
         foreach ($this->effects as $effectData) {
             $data = explode(":", $effectData);
-            //$effect = new EffectInstance(Effect::getEffect($data[0]));
             $effect = new EffectInstance(Effect::getEffect((int)$data[0]));
             $effect->setAmplifier((int)$data[1])->setDuration(20 * (int)$data[2]);
-            //$effect->setAmplifier($data[1])->setDuration(20 * $data[2]);
             $effectInstances[] = $effect;
         }
+        return $effectInstances;
+    }
 
-    public function checkCooldown(Player $player)
-    {is->playerList[$player->getName()] = time();
-            $this->playerList[$player->getName()] = time();
-            return true;
-        }
-        $remainingCooldown = ($this->playerList[$player->getName()] + $this->getCooldown()) - time();
-        if ($remainingCooldown <= 0) {
-            $this->playerList[$player->getName()] = time();
-            return true;
-        } else {
-            return $remainingCooldown;
-        }
+    public function checkCooldown(Player $player): bool
+    {
+        $this->playerList[$player->getName()] = time();
+        return true;
     }
 
     public function isGem(Item $element): bool
     {
         $item = $this->getItem();
-        return ($element->getId() == $item->getId() && $element->getDamage() == $item->getDamage());
+        return $element->getId() === $item->getId() && $element->getDamage() === $item->getDamage();
     }
 
-    public function onItemUse(Player $player, Item $item)
+    public function onItemUse(PlayerInteractEvent $event): void
     {
+        $player = $event->getPlayer();
+        $item = $event->getItem();
+
         if (!$this->isGem($item)) {
-            return false;
+            return;
         }
-        if (($time = $this->checkCooldown($player)) > 0) {
-            $player->sendTip("§3Cooldown required, wait §b" . $time . "§7 seconds");
-            return false;
-        }
-       // if (($time = $this->checkCooldown($player)) !== true) {
-      //      $player->sendTip("§3Cooldown required, wait §b" . $time . "§7 seconds");
-      //      return false;
-       // }
-        $player->sendTip("§2Activated effects..");
-        foreach ($this->getEffects() as $effect) {
-            $player->addEffect($effect);
+
+        if ($this->checkCooldown($player)) {
+            $player->sendTip("§2Activated effects..");
+            foreach ($this->getEffects() as $effect) {
+                $player->addEffect($effect);
+            }
+        } else {
+            $cooldown = $this->getRemainingCooldown($player);
+            $player->sendTip("§3Cooldown required, wait §b" . $cooldown . "§7 seconds");
         }
     }
 
-    public function checkName(Player $player, Item $item)
+    public function checkName(Player $player, Item $element, int $slot): void
     {
-        if ($this->isGem($item)) {
-            if ($item->getName() !== $this->getName()) {
-                $player->getInventory()->removeItem($item);
-                $item->setCustomName($this->getName());
-                $item->setLore($this->getTags());
-                $player->getInventory()->addItem($item);
-            }
+        if ($this->isGem($element)) {
+            $player->sendPopup("§6You are holding a §f" . $this->getName() . "§6!");
         }
+    }
+
+    public function getRemainingCooldown(Player $player): int
+    {
+        $lastUsage = $this->playerList[$player->getName()] ?? 0;
+        $remainingCooldown = $this->getCooldown() - (time() - $lastUsage);
+        return max(0, $remainingCooldown);
     }
 
     private function parseItemString(string $itemString): Item
     {
-        $itemData = explode(":", $itemString);
-        $id = $itemData[0] && is_numeric($itemData[0]) ? $itemData[0] : 0;
-        if ($id == 0 && is_string($itemData[0])) {
-            $id = constant(Item::class . "::" . strtoupper($itemData[0]));
-        }
-        return Item::get($id, $itemData[1] ?? 0, 1);
+        $parts = explode(":", $itemString);
+        $itemId = (int)$parts[0];
+        $itemDamage = isset($parts[1]) ? (int)$parts[1] : 0;
+        return Item::get($itemId, $itemDamage);
     }
 }
